@@ -1,3 +1,7 @@
 psycopg2-binary
 seleniumbase
 sqlalchemy
+cloudinary
+requests
+python-dotenv
+pandas

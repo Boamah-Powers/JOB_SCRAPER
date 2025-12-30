@@ -1,2 +1,4 @@
 downloaded_files/
+docs/
 .env
+__pycache__
