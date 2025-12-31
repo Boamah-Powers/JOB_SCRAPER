@@ -2,3 +2,9 @@ downloaded_files/
 docs/
 .env
 __pycache__
+
+# airflow ignores
+logs/
+plugins/
+airflow.cfg
+airflow.db
