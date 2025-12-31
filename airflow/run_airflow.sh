@@ -3,7 +3,7 @@
 # Exit on any error
 set -e
 export AIRFLOW_HOME="$(pwd)"
-# source $(AIRFLOW_HOME)/airflow_env/bin/activate
+source $(AIRFLOW_HOME)/airflow_env/bin/activate
 
 echo "Starting all Airflow components..."
 

@@ -8,3 +8,7 @@ logs/
 plugins/
 airflow.cfg
 airflow.db
+
+# vm ignores
+scraper_env
+airflow_env
