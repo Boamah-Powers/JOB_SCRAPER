@@ -142,7 +142,7 @@ class IndeedScraper:
                         if sb.is_element_present('a[data-testid="pagination-page-next"]'):
                             logger.info(f"  Scraping page {page_count + 1}...")
                             sb.click('a[data-testid="pagination-page-next"]')
-                            sb.sleep(2)  # Wait for next page to load
+                            sb.wait_for_ready_state_complete()  # Wait for next page to load
                         else:
                             # No more pages available - exit pagination loop
                             break
