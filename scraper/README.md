@@ -1,29 +1,32 @@
-# Job Scraper - Refactored Project Structure
+# Job Scraper - Pipeline Directory
 
 ## Overview
-This project implements a modular data pipeline for scraping, normalizing, and storing job postings following the **Bronze → Silver → Gold** data engineering pattern with cloud-based storage for Airflow compatibility.
+This directory contains the core data pipeline for scraping, normalizing, and storing job postings following the **Bronze → Silver → Gold** data engineering pattern with cloud-based storage.
 
-## Project Structure
+## Directory Structure
 
 ```
-job_scraper/
+scraper/
 ├── src/
+│   ├── __init__.py
 │   ├── schema.py                 # Canonical job schema definition
 │   ├── ingestion/
-│   │   └── indeed_scraper.py     # Indeed job scraping logic
+│   │   ├── __init__.py
+│   │   └── indeed_scraper.py     # Indeed job scraping with error handling
 │   ├── storage/
+│   │   ├── __init__.py
 │   │   └── bronze.py             # Cloud storage via Cloudinary
 │   ├── transformation/
-│   │   └── normalize.py          # Data normalization and cleaning
+│   │   ├── __init__.py
+│   │   └── normalize.py          # Data normalization and deduplication
 │   └── loader/
-│       └── database.py           # Database loading (Gold layer)
-├── docs/
-│   ├── project_plan.md
-│   └── phase_1.md
+│       ├── __init__.py
+│       └── database.py           # PostgreSQL loading (Gold layer)
 ├── pipeline.py                   # Main ETL orchestrator
-├── scraper_sb.py                 # Original monolithic script (deprecated)
-├── requirements.txt
-└── .env                          # Database & Cloudinary credentials
+├── run_scraper.sh                # Automated setup and execution script
+├── requirements.txt              # Python dependencies
+├── .env                          # Environment variables (create this)
+└── README.md                     # This file
 ```
 
 ## Data Flow
@@ -53,38 +56,212 @@ job_scraper/
 └─────────────────┘
 ```
 
-## Running the Pipeline
+## Prerequisites
 
-### Prerequisites
-Create a `.env` file with:
+### Required Software
+- **Python 3.10+**
+- **Google Chrome or Chromium** - Required for web scraping
+- **Conda** or **Python venv** - For environment management
+
+### Chrome Installation
+The scraper uses Selenium with Chrome. Install Chrome for your platform:
+
+**Linux:**
 ```bash
-# PostgreSQL Database
-DATABASE_URL=postgresql://username:password@localhost:5432/database_name
+sudo apt-get install -y google-chrome-stable  # Ubuntu/Debian
+sudo dnf install google-chrome-stable         # Fedora/RHEL
+```
 
-# Cloudinary Configuration
-CLOUDINARY_CLOUD_NAME=your_cloud_name
+**macOS:**
+```bash
+brew install --cask google-chrome
+```
+
+**Windows:**
+Download from https://www.google.com/chrome/
+
+### Environment Variables
+Cr Key Features
+
+- **Cross-Platform**: Works on Linux, macOS, and Windows
+- **Flexible Environments**: Supports both Conda and Python venv
+- **Cloud-Native**: Bronze data stored in Cloudinary (Airflow-compatible)
+- **Error Handling**: Comprehensive logging and graceful degradation
+- **Idempotent**: Re-running won't create duplicates in database
+- **Modular**: Each layer (Bronze/Silver/Gold) independently testable
+- **Traceable**: Clear data lineage from raw → normalized → database
+- **Extensible**: Easy to add new job sources (Greenhouse, Lever, etc.)
+- **Production-Ready**: Works with distributed orchestration (Airflow)
+
+## Configuration
+
+### Job Scraper Settings
+Edit [`src/ingestion/indeed_scraper.py`](src/ingestion/indeed_scraper.py) to customize:
+
+```python
+locations = {
+    "uk": "United Kingdom",
+    "ae": "United Arab Emirates", 
+    "sg": "Singapore"
+}
+
+positions = ["software engineer", "data engineer"]
+```
+
+### Pagination Safety
+The scraper limits pagination to 10 pages per position/location to avoid bot detection:
+```python
+MAX_PAGES = 10  # Adjust in indeed_scraper.py
+```
+
+### Database Table
+Jobs are stored in the `indeed_jobs` table. Schema defined in [`src/schema.py`](src/schema.py)
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 ```
 
-### Single Command Execution
+## Running the Pipeline
+
+### Automated Setup and Execution
+
+The easiest way to run the scraper is using the automated script:
+
+**Using Conda (Recommended):**
 ```bash
-python pipeline.py
+./run_scraper.sh conda
 ```
 
-This will:
-1. Scrape jobs from Indeed (UK, UAE, Singapore)
-2. Save raw data to Cloudinary (cloud storage)
-3. Normalize and deduplicate jobs
-4. Load only new jobs to PostgreSQL
+**Using Python venv:**
+```bash
+./run_scraper.sh venv
+```
 
-### Key Features
-- **Cloud-Native**: Bronze data stored in Cloudinary for Airflow compatibility
-- **Idempotent**: Re-running won't create duplicates
-- **Modular**: Each layer can be tested independently
-- **Traceable**: Clear data lineage from raw → normalized → database
-- **Extensible**: Easy to add new job sources
-- **Production-Ready**: Works with distributed Airflow workers
+This script will:
+1. Detect your operating system (Linux/macOS/Windows)
+2. Check for Chrome installation (provides instructions if missing)
+3. Create environment if it doesn't exist (conda: `scraper`, venv: `scraper_env`)
+4. Install all dependencies from `requirements.txt`
+5. Run the complete pipeline
+
+### Manual Execution
+
+If you prefer manual control:
+
+**Setup with Conda:**
+```bash
+conda create -n scraper python=3.10 -y
+conda activate scraper
+pip install -r requirements.txt
+``` Details
+
+### `src/schema.py`
+- Defines canonical job schema (12 required fields)
+- Provides validation methods
+- Used by all pipeline stages for consistency
+
+### `src/ingestion/indeed_scraper.py`
+- Selenium-based scraping with undetected ChromeDriver
+- Multi-level error handling (page-level and job-level)
+- Comprehensive logging for debugging
+- Bot detection bypass with CDP protocol
+- Configurable locations and job positions
+
+### `src/storage/bronze.py`
+- Cloud storage via Cloudinary
+- Unsigned uploads with preset: `job_scraper`
+- ITroubleshooting
+
+### Chrome/ChromeDriver Issues
+If you see "target window already closed" or similar errors:
+1. Ensure Chrome is installed and accessible
+2. Check Chrome version matches ChromeDriver (auto-managed by SeleniumBase)
+3. Try running in non-headless mode for debugging
+
+### Environment Variables Not Found
+```bash
+# Verify .env file exists in scraper/ directory
+ls -la .env
+
+# Check file contents (safely)
+cat .env | grep -v SECRET
+```
+
+### Database Connection Errors
+```bash
+# Test PostgreSQL connection
+python -c "from sqlalchemy import create_engine; import os; from dotenv import load_dotenv; load_dotenv(); engine = create_engine(os.getenv('DATABASE_URL')); print('Connected:', engine.connect())"
+```
+
+### Cloudinary Upload Failures
+- Verify API credentials in `.env`
+- Check upload preset `job_scraper` exists in Cloudinary settings
+- Ensure unsigned uploads are enabled for the preset
+
+### Import Errors
+If you see `ModuleNotFoundError`:
+```bash
+# Ensure you're in the scraper directory
+cd /path/to/scraper
+
+# Verify environment is activated
+which python  # Should show path to scraper env
+
+# Reinstall dependencies
+pip install -r requirements.txt
+```
+
+## Logs and Debugging
+
+The scraper provides detailed logging:
+- **INFO**: Normal operation (jobs scraped, pages processed)
+- **WARNING**: Recoverable issues (single job extraction failed)
+- **ERROR**: Critical failures (page load timeout, database errors)
+
+Example output:
+```
+INFO - Starting scraping for software engineer in uk
+INFO - Navigating to page 1
+INFO - Found 15 job listings on page 1
+INFO - Successfully extracted 14 jobs from page 1
+WARNING - Failed to extract job: Missing required field 'job_title'
+INFO - Scraping summary: 14 successful, 1 failed
+```
+
+## Production Deployment
+
+For automated execution with Airflow, see [`../airflow/README.md`](../airflow/README.md)
+
+The pipeline is designed to run in production with:
+- Scheduled execution (e.g., daily at 2 AM UTC)
+- Retry logic on failures
+- Alert notifications
+- Log aggregation
+- Monitoring dashboards
+
+## Dependencies
+
+See [`requirements.txt`](requirements.txt) for full list. Key dependencies:
+- `seleniumbase` - Web scraping with bot detection bypass
+- `sqlalchemy` - Database ORM
+- `pandas` - Data transformation
+- `cloudinary` - Cloud storage
+- `python-dotenv` - Environment variables
+- `psycopg2-binary` - PostgreSQL driver
+
+## Architecture Benefits
+
+### Cloud Storage (Cloudinary)
+- **Persistent**: Data survives restarts and crashes
+- **Distributed**: Any worker can access bronze data
+- **Scalable**: No local disk limitations
+- **Immutable**: Raw data preserved for audit and replay
+- **Cost-Effective**: Free tier supports development and testing
+
+### Modular Design
+- **Testable**: Each layer can be unit tested independently
+- **Maintainable**: Clear separation of concerns
+- **Extensible**: Add new sources without touching existing code
+- **Observable**: Each stage logs its operations
 
 ## Modules
 
@@ -102,27 +279,3 @@ Normalizes raw data to canonical schema and removes duplicates.
 
 ### `src/loader/database.py`
 Loads data to PostgreSQL with duplicate detection and incremental loading.
-
-## Phase 1 Compliance
-
-✅ **Canonical Schema** - Defined in `src/schema.py`  
-✅ **Single Data Source** - Indeed scraper implemented  
-✅ **Bronze Storage** - Raw JSON stored in Cloudinary (cloud-based)  
-✅ **Silver Transformation** - Normalization and deduplication  
-✅ **Database Persistence** - PostgreSQL with validation  
-✅ **Idempotency** - No duplicates on re-runs  
-✅ **Airflow-Ready** - Cloud storage enables distributed execution
-
-## Architecture Benefits
-
-### Cloud Storage (Cloudinary)
-- **Persistent**: Data survives container/worker restarts
-- **Accessible**: Any Airflow worker can access bronze data
-- **Scalable**: No local disk limitations
-- **Immutable**: Raw data preserved for audit and replay
-
-## Next Steps (Phase 2+)
-- Add more job sources (Greenhouse, Lever)
-- Implement Airflow/Prefect orchestration
-- Add data quality tests (Great Expectations)
-- Build analytics dashboard (Streamlit/FastAPI)
