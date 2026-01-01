@@ -3,7 +3,20 @@
 # Exit on any error
 set -e
 export AIRFLOW_HOME="$(pwd)"
-source $(AIRFLOW_HOME)/airflow_env/bin/activate
+
+# Detect and activate the appropriate environment
+if [ -d "$(pwd)/airflow_env" ]; then
+    echo "Activating Python venv..."
+    source $(pwd)/airflow_env/bin/activate
+elif command -v conda &> /dev/null && conda env list | grep -q "^airflow "; then
+    echo "Activating conda environment 'airflow'..."
+    eval "$(conda shell.bash hook)"
+    conda activate airflow
+else
+    echo "Error: No Airflow environment found!"
+    echo "Please run airflow_install.sh first to set up the environment."
+    exit 1
+fi
 
 echo "Starting all Airflow components..."
 
