@@ -13,7 +13,7 @@ fi
 echo "Setting up scraper with ${ENV_TYPE}..."
 
 # Check if .env exists
-if [ ! -f .env ]; then
+if [ ! -f ../.env ]; then
     echo "Error: .env file not found. Please create it with required credentials."
     exit 1
 fi
