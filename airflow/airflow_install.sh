@@ -65,7 +65,7 @@ JWT_SECRET=$(python -c "import secrets; print(secrets.token_urlsafe(32))")
 SECRET_KEY=$(python -c "import secrets; print(secrets.token_urlsafe(32))")
 
 # Update executor to LocalExecutor
-sed -i.bak 's/^executor = .*/executor = LocalExecutor/' "${AIRFLOW_HOME}/airflow.cfg"
+sed -i.bak 's/^executor = .*/executor = SequentialExecutor/' "${AIRFLOW_HOME}/airflow.cfg"
 
 # Update auth_manager (on macOS use -i.bak, on Linux use -i'')
 sed -i.bak 's|^# auth_manager = .*|auth_manager = airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager|' "${AIRFLOW_HOME}/airflow.cfg"
@@ -89,7 +89,3 @@ airflow users create \
     --role Admin \
     --email admin@example.com \
     --password admin
-
-
-# command to start server
-airflow api-server --port 8080

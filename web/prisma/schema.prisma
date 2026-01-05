@@ -1,0 +1,86 @@
+// Prisma schema for Job Scraper Web Application
+// Phase 2: User authentication and application tracking
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Jobs table (existing from Phase 1, now with id added)
+model IndeedJob {
+  id               Int       @id @default(autoincrement())
+  job_title        String
+  company_name     String
+  company_location String
+  job_url          String
+  search_position  String?
+  search_location  String?
+  domain           String?
+  scraped_at       DateTime? @db.Timestamp(6)
+  
+  // Relation to applications
+  applications     Application[]
+
+  @@index([company_location], map: "idx_indeed_jobs_company_location")
+  @@index([company_name], map: "idx_indeed_jobs_company_name")
+  @@index([scraped_at], map: "idx_indeed_jobs_scraped_at")
+  @@map("indeed_jobs")
+}
+
+// Users table for authentication
+model User {
+  id            Int           @id @default(autoincrement())
+  email         String        @unique
+  password_hash String
+  name          String?
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @updatedAt
+  
+  // Relation to applications
+  applications  Application[]
+  
+  @@index([email])
+  @@map("users")
+}
+
+// Applications table for tracking job applications
+model Application {
+  id           Int        @id @default(autoincrement())
+  user_id      Int
+  job_id       Int
+  status       String     @default("saved") // saved, applied, assessment, interview, offer, rejected, withdrawn
+  applied_date DateTime?
+  notes        String?    @db.Text
+  created_at   DateTime   @default(now())
+  updated_at   DateTime   @updatedAt
+  
+  // Relations
+  user         User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  job          IndeedJob  @relation(fields: [job_id], references: [id], onDelete: Cascade)
+  statusHistory ApplicationStatusHistory[]
+  
+  @@unique([user_id, job_id])
+  @@index([user_id])
+  @@index([job_id])
+  @@index([status])
+  @@map("applications")
+}
+
+// Application status history for tracking changes over time
+model ApplicationStatusHistory {
+  id             Int         @id @default(autoincrement())
+  application_id Int
+  status         String
+  changed_at     DateTime    @default(now())
+  notes          String?     @db.Text
+  
+  // Relation
+  application    Application @relation(fields: [application_id], references: [id], onDelete: Cascade)
+  
+  @@index([application_id])
+  @@index([changed_at])
+  @@map("application_status_history")
+}
