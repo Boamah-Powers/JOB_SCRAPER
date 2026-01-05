@@ -25,8 +25,9 @@ scraper/
 ├── pipeline.py                   # Main ETL orchestrator
 ├── run_scraper.sh                # Automated setup and execution script
 ├── requirements.txt              # Python dependencies
-├── .env                          # Environment variables (create this)
 └── README.md                     # This file
+
+Note: .env file is located in the parent directory (job_scraper/.env) and is shared with the web application.
 ```
 
 ## Data Flow
@@ -81,7 +82,22 @@ brew install --cask google-chrome
 Download from https://www.google.com/chrome/
 
 ### Environment Variables
-Cr Key Features
+
+Create a `.env` file in the **parent directory** (`job_scraper/.env`) with the following:
+
+```bash
+# Database Configuration
+DATABASE_URL=postgresql://username:password@host:port/dbname
+
+# Cloudinary Configuration
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+```
+
+This `.env` file is shared between the scraper and web application.
+
+## Key Features
 
 - **Cross-Platform**: Works on Linux, macOS, and Windows
 - **Flexible Environments**: Supports both Conda and Python venv
@@ -179,11 +195,14 @@ If you see "target window already closed" or similar errors:
 
 ### Environment Variables Not Found
 ```bash
-# Verify .env file exists in scraper/ directory
-ls -la .env
+# Verify .env file exists in parent directory (job_scraper/.env)
+cd .. && ls -la .env
 
 # Check file contents (safely)
-cat .env | grep -v SECRET
+cat ../.env | grep -v SECRET
+
+# Or from scraper directory
+ls -la ../.env
 ```
 
 ### Database Connection Errors
