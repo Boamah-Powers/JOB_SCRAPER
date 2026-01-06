@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma';
 import SearchBar from '@/components/SearchBar';
 import Pagination from '@/components/Pagination';
 import { ExternalLink } from 'lucide-react';
-import { IndeedJob } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 interface SearchParams {
   page?: string;
@@ -61,7 +61,7 @@ export default async function JobsPage({
       take: limit,
     }),
     prisma.indeedJob.count({ where }),
-  ]) as [IndeedJob[], number];
+  ]) as [Prisma.IndeedJobGetPayload<{}>[], number];
   
   const totalPages = Math.ceil(totalCount / limit);
   
