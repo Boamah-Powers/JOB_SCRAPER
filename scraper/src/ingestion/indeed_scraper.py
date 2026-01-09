@@ -118,7 +118,13 @@ class IndeedScraper:
                                 job_title = job_data[0].text
                                 company_name = job_data[1].text
                                 company_location = job_data[2].text
-                                job_url = "https://{}.indeed.com".format(domain) + job_data[3].get_attribute("href")
+                                
+                                # Get href and check if it's already a full URL
+                                href = job_data[3].get_attribute("href")
+                                if href.startswith("http://") or href.startswith("https://"):
+                                    job_url = href
+                                else:
+                                    job_url = "https://{}.indeed.com".format(domain) + href
 
                                 # Filter: Only keep URLs with '/rc/clk?jk=' pattern (valid job links)
                                 # This excludes sponsored posts and other non-standard listings
